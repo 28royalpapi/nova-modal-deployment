@@ -42,17 +42,22 @@ jobs:
           import pathlib
           import sys
 
+          known = ("ak-", "as-", "wk-", "ws-")
+
           def clean(name):
-              # API credentials never contain whitespace; remove copy/paste whitespace
-              # and optional quote wrappers without logging the value.
-              value = "".join(os.environ.get(name, "").split())
-              return value.strip(chr(34)).strip(chr(39))
+              value = "".join(os.environ.get(name, "").split()).strip(chr(34)).strip(chr(39))
+              # Recover the credential itself if a copied label, BOM, or other wrapper
+              # was accidentally included before the known token prefix.
+              positions = [(value.find(prefix), prefix) for prefix in known if value.find(prefix) >= 0]
+              if positions:
+                  position, _ = min(positions, key=lambda pair: pair[0])
+                  value = value[position:]
+              return value
 
           token_id = clean("RAW_MODAL_TOKEN_ID")
           token_secret = clean("RAW_MODAL_TOKEN_SECRET")
-          recognized = ("ak-", "as-", "wk-", "ws-")
-          id_prefix = token_id[:3] if token_id[:3] in recognized else "other"
-          secret_prefix = token_secret[:3] if token_secret[:3] in recognized else "other"
+          id_prefix = token_id[:3] if token_id[:3] in known else "other"
+          secret_prefix = token_secret[:3] if token_secret[:3] in known else "other"
           print(f"Credential type check (prefixes only): ID={id_prefix}; secret={secret_prefix}")
           print(f"Credential lengths (values not shown): ID={len(token_id)}; secret={len(token_secret)}")
 
@@ -62,7 +67,7 @@ jobs:
               print("Detected reversed Modal API credential order; corrected in the runner only.")
 
           if id_prefix != "ak-" or secret_prefix != "as-":
-              print("::error::Expected Modal API token ID ak-... and secret as-.... Workspace proxy credentials wk-/ws- cannot deploy apps. Prefixes only are shown above; token values are never printed.")
+              print("::error::No complete Modal API token pair was found in the selected secrets. Expected API prefixes ak- and as-. Workspace proxy prefixes wk-/ws- cannot deploy apps. No token values were printed.")
               sys.exit(1)
 
           env_file = pathlib.Path(os.environ["GITHUB_ENV"])
