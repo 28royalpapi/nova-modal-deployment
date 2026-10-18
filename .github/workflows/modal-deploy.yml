@@ -2,6 +2,10 @@ name: Deploy NOVA Modal worker
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/modal-deploy.yml"
+      - "nova_modal_corrected_source.txt"
 
 permissions:
   contents: read
@@ -36,7 +40,7 @@ jobs:
       - name: Install Modal CLI
         run: |
           python -m pip install --upgrade pip
-          python -m pip install modal
+          python -m pip install modal httpx "fastapi[standard]"
 
       - name: Deploy NOVA worker to Modal
         env:
