@@ -1,0 +1,46 @@
+name: Deploy NOVA Modal worker
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check Modal credentials are configured
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+        run: |
+          if [ -z "$MODAL_TOKEN_ID" ] || [ -z "$MODAL_TOKEN_SECRET" ]; then
+            echo "::error::Add repository Actions secrets MODAL_TOKEN_ID and MODAL_TOKEN_SECRET before deploying."
+            exit 1
+          fi
+
+      - name: Prepare and syntax-check worker
+        run: |
+          cp nova_modal_corrected_source.txt nova_modal.py
+          python -m py_compile nova_modal.py
+
+      - name: Install Modal CLI
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install modal
+
+      - name: Deploy NOVA worker to Modal
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+        run: modal deploy nova_modal.py
+        
