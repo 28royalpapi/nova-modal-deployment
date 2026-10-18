@@ -32,17 +32,21 @@ jobs:
             exit 1
           fi
 
-      - name: Validate Modal API token format
+      - name: Validate and normalize Modal API credentials
         env:
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          RAW_MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          RAW_MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
         run: |
-          if [[ "$MODAL_TOKEN_ID" != ak-* ]]; then
-            echo "::error::MODAL_TOKEN_ID must be a Modal API token ID beginning with ak-. A workspace proxy token beginning wk- is not accepted for deployment."
-            exit 1
-          fi
-          if [[ "$MODAL_TOKEN_SECRET" != as-* ]]; then
-            echo "::error::MODAL_TOKEN_SECRET must be a Modal API token secret beginning with as-. A workspace proxy secret beginning ws- is not accepted for deployment."
+          if [[ "$RAW_MODAL_TOKEN_ID" == ak-* && "$RAW_MODAL_TOKEN_SECRET" == as-* ]]; then
+            printf 'MODAL_TOKEN_ID=%s\n' "$RAW_MODAL_TOKEN_ID" >> "$GITHUB_ENV"
+            printf 'MODAL_TOKEN_SECRET=%s\n' "$RAW_MODAL_TOKEN_SECRET" >> "$GITHUB_ENV"
+            echo "Modal API credential types verified."
+          elif [[ "$RAW_MODAL_TOKEN_ID" == as-* && "$RAW_MODAL_TOKEN_SECRET" == ak-* ]]; then
+            printf 'MODAL_TOKEN_ID=%s\n' "$RAW_MODAL_TOKEN_SECRET" >> "$GITHUB_ENV"
+            printf 'MODAL_TOKEN_SECRET=%s\n' "$RAW_MODAL_TOKEN_ID" >> "$GITHUB_ENV"
+            echo "::warning::The two valid Modal API values were in opposite fields; the workflow corrected their order for this deployment."
+          else
+            echo "::error::The saved values are not a Modal API token pair. The API token ID must begin ak- and the secret as-. Workspace proxy credentials begin wk-/ws- and cannot deploy apps. Replace the saved values with an API token pair."
             exit 1
           fi
 
@@ -57,8 +61,5 @@ jobs:
           python -m pip install modal httpx "fastapi[standard]"
 
       - name: Deploy NOVA worker to Modal
-        env:
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
         run: modal deploy nova_modal.py
         
