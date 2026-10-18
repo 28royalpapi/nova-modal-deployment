@@ -43,15 +43,16 @@ jobs:
           import sys
 
           def clean(name):
-              value = os.environ.get(name, "")
-              value = value.strip().strip("\\\"").strip("'").strip()
+              value = os.environ.get(name, "").strip()
+              if len(value) >= 2 and value[0] == value[-1] and value[0] in ("\\\"", "'"):
+                  value = value[1:-1].strip()
               return value.replace("\\r", "").replace("\\n", "")
 
           token_id = clean("RAW_MODAL_TOKEN_ID")
           token_secret = clean("RAW_MODAL_TOKEN_SECRET")
-
-          id_prefix = token_id[:3] if token_id[:3] in ("ak-", "as-", "wk-", "ws-") else "other"
-          secret_prefix = token_secret[:3] if token_secret[:3] in ("ak-", "as-", "wk-", "ws-") else "other"
+          recognized = ("ak-", "as-", "wk-", "ws-")
+          id_prefix = token_id[:3] if token_id[:3] in recognized else "other"
+          secret_prefix = token_secret[:3] if token_secret[:3] in recognized else "other"
           print(f"Credential type check (prefixes only): ID={id_prefix}; secret={secret_prefix}")
           print(f"Credential lengths (values not shown): ID={len(token_id)}; secret={len(token_secret)}")
 
@@ -61,7 +62,7 @@ jobs:
               print("Detected reversed Modal API credential order; corrected in the runner only.")
 
           if id_prefix != "ak-" or secret_prefix != "as-":
-              print("::error::Expected Modal API token ID ak-... and secret as-.... Workspace proxy credentials wk-/ws- cannot deploy apps. Check which exact credential values were saved to the two GitHub secrets.")
+              print("::error::Expected Modal API token ID ak-... and secret as-.... Workspace proxy credentials wk-/ws- cannot deploy apps. This diagnostic prints prefixes only, never token values.")
               sys.exit(1)
 
           env_file = pathlib.Path(os.environ["GITHUB_ENV"])
