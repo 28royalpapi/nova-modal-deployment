@@ -43,10 +43,10 @@ jobs:
           import sys
 
           def clean(name):
-              value = os.environ.get(name, "").strip()
-              if len(value) >= 2 and value[0] == value[-1] and value[0] in ("\\\"", "'"):
-                  value = value[1:-1].strip()
-              return value.replace("\\r", "").replace("\\n", "")
+              # API credentials never contain whitespace; remove copy/paste whitespace
+              # and optional quote wrappers without logging the value.
+              value = "".join(os.environ.get(name, "").split())
+              return value.strip(chr(34)).strip(chr(39))
 
           token_id = clean("RAW_MODAL_TOKEN_ID")
           token_secret = clean("RAW_MODAL_TOKEN_SECRET")
@@ -62,13 +62,13 @@ jobs:
               print("Detected reversed Modal API credential order; corrected in the runner only.")
 
           if id_prefix != "ak-" or secret_prefix != "as-":
-              print("::error::Expected Modal API token ID ak-... and secret as-.... Workspace proxy credentials wk-/ws- cannot deploy apps. This diagnostic prints prefixes only, never token values.")
+              print("::error::Expected Modal API token ID ak-... and secret as-.... Workspace proxy credentials wk-/ws- cannot deploy apps. Prefixes only are shown above; token values are never printed.")
               sys.exit(1)
 
           env_file = pathlib.Path(os.environ["GITHUB_ENV"])
           with env_file.open("a", encoding="utf-8") as f:
-              f.write(f"MODAL_TOKEN_ID={token_id}\\n")
-              f.write(f"MODAL_TOKEN_SECRET={token_secret}\\n")
+              f.write("MODAL_TOKEN_ID=" + token_id + "\n")
+              f.write("MODAL_TOKEN_SECRET=" + token_secret + "\n")
           print("Modal API credential format accepted. Token values were not printed.")
           PY
 
