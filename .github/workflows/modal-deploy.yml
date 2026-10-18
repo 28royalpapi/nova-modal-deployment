@@ -24,18 +24,18 @@ jobs:
 
       - name: Check Modal credentials are configured
         env:
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_TOKEN_ID: ${{ secrets.NOVA_TOKEN_ID || secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.NOVA_SECRET_KEY || secrets.NOVA_TOKEN_SECRET || secrets.MODAL_TOKEN_SECRET }}
         run: |
           if [ -z "$MODAL_TOKEN_ID" ] || [ -z "$MODAL_TOKEN_SECRET" ]; then
-            echo "::error::Add repository Actions secrets MODAL_TOKEN_ID and MODAL_TOKEN_SECRET before deploying."
+            echo "::error::Add the Modal token pair as repository Actions secrets NOVA_TOKEN_ID and NOVA_SECRET_KEY (preferred), or MODAL_TOKEN_ID and MODAL_TOKEN_SECRET."
             exit 1
           fi
 
       - name: Validate and normalize Modal API credentials
         env:
-          RAW_MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          RAW_MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          RAW_MODAL_TOKEN_ID: ${{ secrets.NOVA_TOKEN_ID || secrets.MODAL_TOKEN_ID }}
+          RAW_MODAL_TOKEN_SECRET: ${{ secrets.NOVA_SECRET_KEY || secrets.NOVA_TOKEN_SECRET || secrets.MODAL_TOKEN_SECRET }}
         run: |
           python - <<'PY'
           import os
