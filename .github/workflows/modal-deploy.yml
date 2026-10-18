@@ -32,6 +32,20 @@ jobs:
             exit 1
           fi
 
+      - name: Validate Modal API token format
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+        run: |
+          if [[ "$MODAL_TOKEN_ID" != ak-* ]]; then
+            echo "::error::MODAL_TOKEN_ID must be a Modal API token ID beginning with ak-. A workspace proxy token beginning wk- is not accepted for deployment."
+            exit 1
+          fi
+          if [[ "$MODAL_TOKEN_SECRET" != as-* ]]; then
+            echo "::error::MODAL_TOKEN_SECRET must be a Modal API token secret beginning with as-. A workspace proxy secret beginning ws- is not accepted for deployment."
+            exit 1
+          fi
+
       - name: Prepare and syntax-check worker
         run: |
           cp nova_modal_corrected_source.txt nova_modal.py
