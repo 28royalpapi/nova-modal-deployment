@@ -34,8 +34,11 @@ jobs:
 
       - name: Validate and normalize Modal API credentials
         env:
-          RAW_MODAL_TOKEN_ID: ${{ secrets.NOVA_TOKEN_ID || secrets.MODAL_TOKEN_ID }}
-          RAW_MODAL_TOKEN_SECRET: ${{ secrets.NOVA_SECRET_KEY || secrets.NOVA_TOKEN_SECRET || secrets.MODAL_TOKEN_SECRET }}
+          RAW_NOVA_TOKEN_ID: ${{ secrets.NOVA_TOKEN_ID }}
+          RAW_MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          RAW_NOVA_SECRET_KEY: ${{ secrets.NOVA_SECRET_KEY }}
+          RAW_NOVA_TOKEN_SECRET: ${{ secrets.NOVA_TOKEN_SECRET }}
+          RAW_MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
         run: |
           python - <<'PY'
           import os
@@ -43,32 +46,35 @@ jobs:
           import sys
 
           known = ("ak-", "as-", "wk-", "ws-")
-
-          def clean(name):
+          names = (
+              "RAW_NOVA_TOKEN_ID", "RAW_MODAL_TOKEN_ID",
+              "RAW_NOVA_SECRET_KEY", "RAW_NOVA_TOKEN_SECRET", "RAW_MODAL_TOKEN_SECRET",
+          )
+          def candidate(name):
               value = "".join(os.environ.get(name, "").split()).strip(chr(34)).strip(chr(39))
-              # Recover the credential itself if a copied label, BOM, or other wrapper
-              # was accidentally included before the known token prefix.
               positions = [(value.find(prefix), prefix) for prefix in known if value.find(prefix) >= 0]
               if positions:
-                  position, _ = min(positions, key=lambda pair: pair[0])
-                  value = value[position:]
-              return value
+                  position, prefix = min(positions, key=lambda pair: pair[0])
+                  return value[position:], prefix
+              return "", "other"
 
-          token_id = clean("RAW_MODAL_TOKEN_ID")
-          token_secret = clean("RAW_MODAL_TOKEN_SECRET")
-          id_prefix = token_id[:3] if token_id[:3] in known else "other"
-          secret_prefix = token_secret[:3] if token_secret[:3] in known else "other"
-          print(f"Credential type check (prefixes only): ID={id_prefix}; secret={secret_prefix}")
-          print(f"Credential lengths (values not shown): ID={len(token_id)}; secret={len(token_secret)}")
+          found = {name: candidate(name) for name in names}
+          api_ids = [(name, value) for name, (value, prefix) in found.items() if prefix == "ak-" and value.startswith("ak-")]
+          api_secrets = [(name, value) for name, (value, prefix) in found.items() if prefix == "as-" and value.startswith("as-")]
+          print("Modal credential scan (secret values never printed):")
+          for name in names:
+              value, prefix = found[name]
+              print(f"  {name.removeprefix('RAW_')}: prefix={prefix}; length={len(value)}")
 
-          if id_prefix == "as-" and secret_prefix == "ak-":
-              token_id, token_secret = token_secret, token_id
-              id_prefix, secret_prefix = "ak-", "as-"
-              print("Detected reversed Modal API credential order; corrected in the runner only.")
-
-          if id_prefix != "ak-" or secret_prefix != "as-":
-              print("::error::No complete Modal API token pair was found in the selected secrets. Expected API prefixes ak- and as-. Workspace proxy prefixes wk-/ws- cannot deploy apps. No token values were printed.")
+          if not api_ids or not api_secrets:
+              print("::error::Could not find both an API ID starting ak- and an API secret starting as- among the saved candidate secrets. This run has not attempted deployment.")
               sys.exit(1)
+
+          id_order = {"NOVA_TOKEN_ID": 0, "MODAL_TOKEN_ID": 1, "NOVA_SECRET_KEY": 2, "NOVA_TOKEN_SECRET": 3, "MODAL_TOKEN_SECRET": 4}
+          secret_order = {"NOVA_SECRET_KEY": 0, "NOVA_TOKEN_SECRET": 1, "MODAL_TOKEN_SECRET": 2, "NOVA_TOKEN_ID": 3, "MODAL_TOKEN_ID": 4}
+          id_name, token_id = min(api_ids, key=lambda item: id_order.get(item[0].removeprefix("RAW_"), 10))
+          secret_name, token_secret = min(api_secrets, key=lambda item: secret_order.get(item[0].removeprefix("RAW_"), 10))
+          print(f"Using ID from {id_name.removeprefix('RAW_')} and secret from {secret_name.removeprefix('RAW_')}.")
 
           env_file = pathlib.Path(os.environ["GITHUB_ENV"])
           with env_file.open("a", encoding="utf-8") as f:
