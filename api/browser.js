@@ -1,9 +1,10 @@
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 import { chromium as pw } from "playwright-core";
 import { createClient } from "@supabase/supabase-js";
 import dns from "node:dns/promises";
 import net from "node:net";
 export const config={maxDuration:60,api:{bodyParser:{sizeLimit:"256kb"}}};
+const CHROMIUM_PACK_URL=process.env.NOVA_CHROMIUM_PACK_URL||"https://github.com/Sparticuz/chromium/releases/download/v138.0.2/chromium-v138.0.2-pack.x64.tar";
 const SU=process.env.SUPABASE_URL||"https://ghthfxkkdokmilyayxcl.supabase.co";
 const ANON=process.env.SUPABASE_ANON_KEY||process.env.VITE_SUPABASE_PUBLISHABLE_KEY||"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdodGhmeGtrZG9rbWlseWF5eGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzMDA0NTYsImV4cCI6MjA3NTg3NjQ1Nn0.iM9uqEuLMzFxybvhw1j3w9AV4u8BENAt_wqJftQ925s";
 const out=(r,s,b)=>r.status(s).setHeader("Content-Type","application/json; charset=utf-8").setHeader("Cache-Control","no-store").json(b),obj=v=>v&&typeof v==="object"&&!Array.isArray(v)?v:{},str=(v,n=2500)=>typeof v==="string"?v.trim().slice(0,n):"";
@@ -21,7 +22,7 @@ export default async function handler(req,res){
   let start,report="",username="",password="";
   if(mode==="public")start=await httpsUrl(str(b.url,2000));
   else{if(b.authorization_consent!==true)return out(res,400,{ok:false,error:"EXPLICIT_AUTHORIZATION_REQUIRED"});start=await httpsUrl(str(b.login_url,2000));username=str(b.username,250);password=typeof b.password==="string"?b.password.slice(0,1000):"";if(!username||!password)return out(res,400,{ok:false,error:"LOGIN_FIELDS_REQUIRED"});report=str(b.report_url,2000);if(report){const u=await httpsUrl(report);if(u.origin!==start.origin)return out(res,400,{ok:false,error:"SAME_ORIGIN_REQUIRED"});report=u.href;}}
-  browser=await pw.launch({args:chromium.args,executablePath:await chromium.executablePath(),headless:true,defaultViewport:chromium.defaultViewport});
+  browser=await pw.launch({args:chromium.args,executablePath:await chromium.executablePath(CHROMIUM_PACK_URL),headless:true,defaultViewport:chromium.defaultViewport});
   context=await browser.newContext({viewport:{width:1365,height:900},deviceScaleFactor:1,acceptDownloads:false,ignoreHTTPSErrors:false});
   const page=await context.newPage();page.setDefaultNavigationTimeout(25000);page.setDefaultTimeout(12000);
   let postUrl=null,postCount=0,blocked=0;const validHosts=new Set([start.hostname.toLowerCase()]);
