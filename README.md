@@ -2,11 +2,14 @@
 
 This project serves the NOVA web interface from `public/` and its on-demand browser endpoint as a Netlify Function. It connects to the existing Supabase project configured in `public/config.js`; only the public Supabase URL and anon key are included in frontend files.
 
-## Deploy on Netlify
+## Easiest Netlify Drop upload
 
-Use a **build deployment** (connect the repository to Netlify, or deploy the extracted project with the Netlify CLI). The build command in `netlify.toml` installs dependencies and checks source syntax. Netlify then builds `netlify/functions/browser.mjs`.
+1. Sign in to Netlify first.
+2. Download this ZIP on your phone and use **Extract** in the phone's Files app.
+3. In Netlify Drop, upload the **entire extracted project folder**. It must contain `netlify.toml`, `package.json`, `public/`, and `netlify/functions/`. Do not upload only `public/`.
+4. Wait for Netlify to finish its build. The build command in `netlify.toml` checks the source; Netlify then bundles and deploys `netlify/functions/browser.mjs`.
 
-A drag-and-drop upload of only static files does not build/deploy the Chromium function. Netlify's CLI deploy can upload static files and functions together: https://cli.netlify.com/commands/deploy/
+Netlify's current docs say logged-in users can drop a project folder for Netlify to build, and ZIPs must be extracted first. See https://docs.netlify.com/start/choose-your-path/ (sections “Drag and drop your project folder” and “Start from zip files”). Uploading only a static output folder will leave the browser function out.
 
 ## Chromium on Linux
 
