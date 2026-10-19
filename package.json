@@ -1,1 +1,16 @@
-{"name":"nova-companion","version":"1.0.0","private":true,"type":"module","description":"NOVA frontend and per-request Chromium runtime","dependencies":{"@sparticuz/chromium":"^138.0.2","@supabase/supabase-js":"^2.57.4","playwright-core":"^1.55.0"}}
+{
+  "name": "nova-companion-netlify",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "description": "NOVA frontend with Supabase and a Netlify Linux/Chromium browser function",
+  "scripts": {
+    "verify:source": "node --check app.js && node --check public/app.js && node --check api/browser.js && node --check netlify/functions/browser.mjs && node --check scripts/smoke-chromium.mjs && node -e \"JSON.parse(require('node:fs').readFileSync('package.json','utf8')); console.log('package.json valid')\"",
+    "test:chromium": "node scripts/smoke-chromium.mjs"
+  },
+  "dependencies": {
+    "@sparticuz/chromium-min": "138.0.2",
+    "@supabase/supabase-js": "2.57.4",
+    "playwright-core": "1.55.0"
+  }
+}
