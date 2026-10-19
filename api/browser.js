@@ -3,7 +3,7 @@ import { chromium as pw } from "playwright-core";
 import { createClient } from "@supabase/supabase-js";
 import dns from "node:dns/promises";
 import net from "node:net";
-export const config={maxDuration:300,api:{bodyParser:{sizeLimit:"256kb"}}};
+export const config={maxDuration:60,api:{bodyParser:{sizeLimit:"256kb"}}};
 const SU=process.env.SUPABASE_URL||"https://ghthfxkkdokmilyayxcl.supabase.co";
 const ANON=process.env.SUPABASE_ANON_KEY||process.env.VITE_SUPABASE_PUBLISHABLE_KEY||"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdodGhmeGtrZG9rbWlseWF5eGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzMDA0NTYsImV4cCI6MjA3NTg3NjQ1Nn0.iM9uqEuLMzFxybvhw1j3w9AV4u8BENAt_wqJftQ925s";
 const out=(r,s,b)=>r.status(s).setHeader("Content-Type","application/json; charset=utf-8").setHeader("Cache-Control","no-store").json(b),obj=v=>v&&typeof v==="object"&&!Array.isArray(v)?v:{},str=(v,n=2500)=>typeof v==="string"?v.trim().slice(0,n):"";
