@@ -1,0 +1,1 @@
+{"name":"nova-companion","version":"1.0.0","private":true,"type":"module","description":"NOVA frontend and per-request Chromium runtime","dependencies":{"@sparticuz/chromium":"^138.0.2","@supabase/supabase-js":"^2.57.4","playwright-core":"^1.55.0"}}
