@@ -15,8 +15,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Check JavaScript syntax
+      - name: Check JavaScript syntax and configuration
         run: |
           node --check app.js
           node --check api/browser.js
-          node --input-type=module -e "JSON.parse(require('node:fs').readFileSync('package.json','utf8')); JSON.parse(require('node:fs').readFileSync('vercel.json','utf8')); console.log('JSON configs valid')"
+          node -e "JSON.parse(require('node:fs').readFileSync('package.json','utf8')); JSON.parse(require('node:fs').readFileSync('vercel.json','utf8')); console.log('JSON configs valid')"
+          test -f index.html
+          test -f config.js
+          test -f styles.css
+          echo "NOVA static and browser runtime entry points exist"
