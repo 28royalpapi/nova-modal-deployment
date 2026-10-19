@@ -1,13 +1,15 @@
-name: Validate NOVA source
+name: Validate and package NOVA for Netlify
 on:
   push:
     branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
+  actions: write
 jobs:
-  validate:
+  validate-and-package:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -15,12 +17,28 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Check JavaScript syntax and configuration
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate JavaScript
+        run: npm run verify:source
+      - name: Launch real Chromium and generate outputs
+        run: npm run test:chromium
+      - name: Build Netlify function bundle
+        run: npx --yes netlify-cli@latest functions:build --functions netlify/functions
+      - name: Create Netlify deployment ZIP
         run: |
-          node --check app.js
-          node --check api/browser.js
-          node -e "JSON.parse(require('node:fs').readFileSync('package.json','utf8')); JSON.parse(require('node:fs').readFileSync('vercel.json','utf8')); console.log('JSON configs valid')"
-          test -f index.html
-          test -f config.js
-          test -f styles.css
-          echo "NOVA static and browser runtime entry points exist"
+          set -euo pipefail
+          stage="$RUNNER_TEMP/nova-netlify-deploy"
+          mkdir -p "$stage"
+          cp -R app.js public api netlify scripts package.json package-lock.json netlify.toml README.md .nvmrc "$stage/"
+          cd "$stage"
+          zip -qr "$GITHUB_WORKSPACE/nova-netlify-deploy.zip" .
+          echo "ZIP_BYTES=$(stat -c%s "$GITHUB_WORKSPACE/nova-netlify-deploy.zip")" >> "$GITHUB_STEP_SUMMARY"
+          echo "Bundle includes frontend, Netlify browser function, runtime handler, package lock, config, smoke test, and README." >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload Netlify deployment ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-netlify-deploy
+          path: nova-netlify-deploy.zip
+          if-no-files-found: error
+          retention-days: 7
