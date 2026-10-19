@@ -24,8 +24,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Validate JavaScript syntax
+      - name: Diagnose and validate JavaScript
         run: |
+          npx --yes prettier@3.6.2 app.js --check
           node --check app.js
           node --check api/browser.js
       - name: Configure Pages
