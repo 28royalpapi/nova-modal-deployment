@@ -1,98 +1,25 @@
-name: Deploy NOVA Modal worker
+name: DEPRECATED - NOVA no longer deploys Modal
+
+# Disabled on purpose: NOVA's public, read-only research path now runs through
+# the Supabase Edge Function using a stateless page reader. This repository no
+# longer deploys or depends on a Modal Linux/Chromium worker.
+#
+# Before any future hosted-browser implementation, create a fresh Modal token
+# pair and perform a security review. Do not re-enable this workflow by default.
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/modal-deploy.yml"
-      - "nova_modal_corrected_source.txt"
 
 permissions:
   contents: read
 
 jobs:
-  deploy:
+  deprecated:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Check Modal credentials are configured
-        env:
-          MODAL_TOKEN_ID: ${{ secrets.NOVA_TOKEN_ID || secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.NOVA_SECRET_KEY || secrets.NOVA_TOKEN_SECRET || secrets.MODAL_TOKEN_SECRET }}
+      - name: Modal deployment disabled
         run: |
-          if [ -z "$MODAL_TOKEN_ID" ] || [ -z "$MODAL_TOKEN_SECRET" ]; then
-            echo "::error::Add the Modal token pair as repository Actions secrets NOVA_TOKEN_ID and NOVA_SECRET_KEY (preferred), or MODAL_TOKEN_ID and MODAL_TOKEN_SECRET."
-            exit 1
-          fi
-
-      - name: Validate and normalize Modal API credentials
-        env:
-          RAW_NOVA_TOKEN_ID: ${{ secrets.NOVA_TOKEN_ID }}
-          RAW_MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          RAW_NOVA_SECRET_KEY: ${{ secrets.NOVA_SECRET_KEY }}
-          RAW_NOVA_TOKEN_SECRET: ${{ secrets.NOVA_TOKEN_SECRET }}
-          RAW_MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-        run: |
-          python - <<'PY'
-          import os
-          import pathlib
-          import sys
-
-          known = ("ak-", "as-", "wk-", "ws-")
-          names = (
-              "RAW_NOVA_TOKEN_ID", "RAW_MODAL_TOKEN_ID",
-              "RAW_NOVA_SECRET_KEY", "RAW_NOVA_TOKEN_SECRET", "RAW_MODAL_TOKEN_SECRET",
-          )
-          def candidate(name):
-              value = "".join(os.environ.get(name, "").split()).strip(chr(34)).strip(chr(39))
-              positions = [(value.find(prefix), prefix) for prefix in known if value.find(prefix) >= 0]
-              if positions:
-                  position, prefix = min(positions, key=lambda pair: pair[0])
-                  return value[position:], prefix
-              return "", "other"
-
-          found = {name: candidate(name) for name in names}
-          api_ids = [(name, value) for name, (value, prefix) in found.items() if prefix == "ak-" and value.startswith("ak-")]
-          api_secrets = [(name, value) for name, (value, prefix) in found.items() if prefix == "as-" and value.startswith("as-")]
-          print("Modal credential scan (secret values never printed):")
-          for name in names:
-              value, prefix = found[name]
-              print(f"  {name.removeprefix('RAW_')}: prefix={prefix}; length={len(value)}")
-
-          if not api_ids or not api_secrets:
-              print("::error::Could not find both an API ID starting ak- and an API secret starting as- among the saved candidate secrets. This run has not attempted deployment.")
-              sys.exit(1)
-
-          id_order = {"NOVA_TOKEN_ID": 0, "MODAL_TOKEN_ID": 1, "NOVA_SECRET_KEY": 2, "NOVA_TOKEN_SECRET": 3, "MODAL_TOKEN_SECRET": 4}
-          secret_order = {"NOVA_SECRET_KEY": 0, "NOVA_TOKEN_SECRET": 1, "MODAL_TOKEN_SECRET": 2, "NOVA_TOKEN_ID": 3, "MODAL_TOKEN_ID": 4}
-          id_name, token_id = min(api_ids, key=lambda item: id_order.get(item[0].removeprefix("RAW_"), 10))
-          secret_name, token_secret = min(api_secrets, key=lambda item: secret_order.get(item[0].removeprefix("RAW_"), 10))
-          print(f"Using ID from {id_name.removeprefix('RAW_')} and secret from {secret_name.removeprefix('RAW_')}.")
-
-          env_file = pathlib.Path(os.environ["GITHUB_ENV"])
-          with env_file.open("a", encoding="utf-8") as f:
-              f.write("MODAL_TOKEN_ID=" + token_id + "\n")
-              f.write("MODAL_TOKEN_SECRET=" + token_secret + "\n")
-          print("Modal API credential format accepted. Token values were not printed.")
-          PY
-
-      - name: Prepare and syntax-check worker
-        run: |
-          cp nova_modal_corrected_source.txt nova_modal.py
-          python -m py_compile nova_modal.py
-
-      - name: Install Modal CLI
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install modal httpx "fastapi[standard]"
-
-      - name: Deploy NOVA worker to Modal
-        run: modal deploy nova_modal.py
-        
+          echo "Modal deployment has been retired for NOVA."
+          echo "Read-only research uses NOVA's Supabase serverless public-reader path."
+          exit 1
