@@ -1,17 +1,35 @@
-# NOVA Companion
+# NOVA — Netlify deployment bundle
 
-Code-first personal AI companion using the existing Supabase project \`ghthfxkkdokmilyayxcl\` for auth/data and its Edge Functions for chat and user records.
+This project serves the NOVA web interface from `public/` and its on-demand browser endpoint as a Netlify Function. It connects to the existing Supabase project configured in `public/config.js`; only the public Supabase URL and anon key are included in frontend files.
 
-## Deploy
-Import the repository into Vercel: https://vercel.com/new/import?s=github&repo=28royalpapi%2Fnova-modal-deployment. Vercel hosts the static frontend and Node API in the same project. GitHub Pages cannot run the Chromium API.
+## Deploy on Netlify
 
-## OpenAI
-1. Create a key at https://platform.openai.com/api-keys.
-2. In Supabase Project Settings → Edge Functions → Secrets for project \`ghthfxkkdokmilyayxcl\`, add \`OPENAI_API_KEY\`.
-3. Do not commit the key, put it in \`config.js\`, or paste it in chat.
-4. NOVA defaults to \`gpt-5-mini\`; open Settings and use **Test connection** after setting the secret.
+Use a **build deployment** (connect the repository to Netlify, or deploy the extracted project with the Netlify CLI). The build command in `netlify.toml` installs dependencies and checks source syntax. Netlify then builds `netlify/functions/browser.mjs`.
 
-OpenAI API billing is separate from ChatGPT. Set a budget/usage limit before high-volume use.
+A drag-and-drop upload of only static files does not build/deploy the Chromium function. Netlify's CLI deploy can upload static files and functions together: https://cli.netlify.com/commands/deploy/
 
-## Browser privacy/limitations
-\`api/browser.js\` launches a fresh Playwright/Chromium context per request and discards it afterward. Public mode reads HTTPS pages. Authorized-login mode requires explicit consent and supports only a simple same-origin POST form; CAPTCHA/MFA, GET login forms, and cross-origin authentication flows are refused. Credentials are not sent to the model or saved in task results. Text/status are saved via the authenticated Supabase function; screenshot and PDF are returned to the signed-in user. This is a per-request browser, not a persistent Debian desktop or general shell.
+## Chromium on Linux
+
+The function uses `@sparticuz/chromium-min` so the Chromium binaries do not need to be included in the serverless function bundle. On a cold start, the function downloads the pinned x64 Chromium pack from the official upstream GitHub release and extracts it into temporary function storage. `NOVA_CHROMIUM_PACK_URL` can override the default only with a compatible, trusted pack URL.
+
+This is a stateless, headless Linux/Chromium process per request, not a persistent Debian VM, terminal, or GUI desktop. Netlify documents a default 60-second synchronous function execution limit and 1 GB memory, and a first cold start downloads the browser pack. Complex pages, slow sites, multi-step login flows, and MFA/CAPTCHA can time out or be refused safely. See https://docs.netlify.com/build/functions/configuration/
+
+## Browser safeguards
+
+- Reads public HTTPS pages and returns text, a screenshot, and a short PDF.
+- Attempts a simple same-origin POST login only when the account owner explicitly authorizes it.
+- Refuses CAPTCHA/MFA bypass, cross-origin login flows, insecure HTTP, and GET-based login forms.
+- Closes the browser context after each request. NOVA does not save cookies/browser storage or send credentials to the language model.
+
+This is not general-purpose shell access and does not install a persistent Debian system. Arbitrary shell execution is intentionally not exposed.
+
+## Required credentials
+
+- Add `OPENAI_API_KEY` to Supabase Edge Function secrets. Never put it in `public/config.js`, the ZIP, or GitHub.
+- `NOVA_CHROMIUM_PACK_URL` is optional; the package has a default upstream URL.
+- Supabase remains the existing authentication and data backend.
+
+## Validation
+
+`npm run verify:source` checks JavaScript syntax. `npm run test:chromium` launches the actual Linux Chromium binary, opens example.com, and generates a screenshot and PDF. GitHub Actions runs both checks and packages the deployment ZIP. Passing CI verifies execution in a GitHub Linux runner; a live Netlify function smoke test is still needed after deployment.
+
