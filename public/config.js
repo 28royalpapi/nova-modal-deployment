@@ -1,0 +1,3 @@
+// Public values only. Never place OPENAI_API_KEY or a service-role key in this file.
+export const SUPABASE_URL = "https://ghthfxkkdokmilyayxcl.supabase.co";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdodGhmeGtrZG9rbWlseWF5eGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzMDA0NTYsImV4cCI6MjA3NTg3NjQ1Nn0.iM9uqEuLMzFxybvhw1j3w9AV4u8BENAt_wqJftQ925s";
