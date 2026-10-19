@@ -1,21 +1,12 @@
-name: Publish NOVA static preview
+name: Validate NOVA source
 on:
   push:
     branches: [main]
-    paths: ["index.html","app.js","config.js","styles.css","favicon.svg",".github/workflows/pages.yml"]
   workflow_dispatch:
 permissions:
   contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: pages
-  cancel-in-progress: true
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,19 +15,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Format and validate JavaScript syntax
+      - name: Check JavaScript syntax
         run: |
-          npx --yes prettier@3.6.2 app.js api/browser.js --write
           node --check app.js
           node --check api/browser.js
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - name: Upload static site
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-      - name: Publish
-        id: deployment
-        uses: actions/deploy-pages@v4
+          node --input-type=module -e "JSON.parse(require('node:fs').readFileSync('package.json','utf8')); JSON.parse(require('node:fs').readFileSync('vercel.json','utf8')); console.log('JSON configs valid')"
