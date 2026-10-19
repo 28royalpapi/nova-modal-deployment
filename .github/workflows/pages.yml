@@ -24,7 +24,7 @@ jobs:
       - name: Launch real Chromium and generate outputs
         run: npm run test:chromium
       - name: Build Netlify function bundle
-        run: npx --yes netlify-cli@latest functions:build --functions netlify/functions
+        run: npx --yes netlify-cli@latest functions:build --src netlify/functions --functions .netlify/functions-internal
       - name: Create Netlify deployment ZIP
         run: |
           set -euo pipefail
